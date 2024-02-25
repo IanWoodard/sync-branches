@@ -59,6 +59,7 @@ jobs:
         with:
           source-branch: "develop"
           target-branch: "main"
+          commit-message: "Test Commit Message"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print Output
