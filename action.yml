@@ -1,23 +1,33 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Sync Branches'
+description: 'GitHub Action to seamlessly synchronize changes across branches'
+author: 'Ian Woodard'
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: 'heart'
-  color: 'red'
+  icon: 'git-pull-request'
+  color: 'blue'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  source-branch:
+    description: 'Source Branch'
     required: true
-    default: '1000'
+  target-branch:
+    description: 'Target Branch'
+    required: true
+  commit-message:
+    description: 'Commit Message'
+    required: true
+  github-token:
+    description: 'GitHub Token'
+    required: true
 
 # Define your outputs here.
 outputs:
-  time:
-    description: 'Your output description here'
+  pull-request-url:
+    description: 'URL of the pull request'
+  pull-request-number:
+    description: 'Number of the pull request'
 
 runs:
   using: node20

@@ -7,83 +7,110 @@
  */
 
 import * as core from '@actions/core'
+import * as github from '@actions/github'
 import * as main from '../src/main'
+import { areBranchesOutOfSync, findExistingPullRequest } from '../src/utils'
 
 // Mock the action's main function
 const runMock = jest.spyOn(main, 'run')
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
-
 // Mock the GitHub Actions core library
-let debugMock: jest.SpiedFunction<typeof core.debug>
-let errorMock: jest.SpiedFunction<typeof core.error>
 let getInputMock: jest.SpiedFunction<typeof core.getInput>
-let setFailedMock: jest.SpiedFunction<typeof core.setFailed>
 let setOutputMock: jest.SpiedFunction<typeof core.setOutput>
+
+jest.mock('@actions/core')
+jest.mock('@actions/github', () => ({
+  context: {
+    repo: {
+      owner: 'test-owner',
+      repo: 'test-repo',
+    },
+  },
+  getOctokit: jest.fn(),
+}))
+jest.mock('../src/utils')
 
 describe('action', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    debugMock = jest.spyOn(core, 'debug').mockImplementation()
-    errorMock = jest.spyOn(core, 'error').mockImplementation()
     getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
-    setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
     setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
   })
 
-  it('sets the time output', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return '500'
-        default:
-          return ''
-      }
-    })
+  it('should catch errors and set the action as failed', async () => {
+    const error = new Error('Test error')
+
+    getInputMock.mockReturnValue('test')
+    ;(areBranchesOutOfSync as jest.Mock).mockRejectedValue(error)
 
     await main.run()
-    expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      expect.stringMatching(timeRegex)
-    )
-    expect(errorMock).not.toHaveBeenCalled()
+    expect(runMock).toHaveReturned()
+    expect(core.setFailed).toHaveBeenCalledWith(error.message)
   })
 
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
-      switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
-        default:
-          return ''
-      }
+  it('should fail if required inputs are not provided', async () => {
+    getInputMock.mockReturnValue('')
+
+    await main.run()
+    expect(runMock).toHaveReturned()
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      'Input required and not supplied: source-branch, target-branch, commit-message, github-token',
+    )
+  })
+
+  it('should do nothing if branches are already in sync', async () => {
+    getInputMock.mockReturnValue('test')
+    ;(areBranchesOutOfSync as jest.Mock).mockResolvedValue(false)
+
+    await main.run()
+    expect(runMock).toHaveReturned()
+
+    expect(core.info).toHaveBeenCalledWith('Branches are already in sync.')
+    expect(setOutputMock).not.toHaveBeenCalled()
+  })
+
+  it('should output the pull request URL and number if it already exists', async () => {
+    getInputMock.mockReturnValue('test')
+    ;(areBranchesOutOfSync as jest.Mock).mockResolvedValue(true)
+    ;(findExistingPullRequest as jest.Mock).mockResolvedValue({
+      html_url: 'test-url',
+      number: 123,
     })
 
     await main.run()
     expect(runMock).toHaveReturned()
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds not a number'
-    )
-    expect(errorMock).not.toHaveBeenCalled()
+    expect(core.info).toHaveBeenCalledWith('Pull request already exists.')
+    expect(setOutputMock).toHaveBeenCalledWith('pull-request-url', 'test-url')
+    expect(setOutputMock).toHaveBeenCalledWith('pull-request-number', '123')
+  })
+
+  it('should create a new pull request', async () => {
+    getInputMock.mockReturnValue('test')
+    ;(areBranchesOutOfSync as jest.Mock).mockResolvedValue(true)
+    ;(findExistingPullRequest as jest.Mock).mockResolvedValue(null)
+    ;(github.getOctokit as jest.Mock).mockReturnValue({
+      rest: {
+        pulls: {
+          create: jest.fn().mockResolvedValue({
+            data: {
+              html_url: 'test-url',
+              number: 123,
+            },
+          }),
+        },
+      },
+    })
+
+    await main.run()
+    expect(runMock).toHaveReturned()
+
+    expect(core.info).not.toHaveBeenCalledWith('Branches are already in sync.')
+    expect(core.info).not.toHaveBeenCalledWith('Pull request already exists.')
+    expect(setOutputMock).toHaveBeenCalledWith('pull-request-url', 'test-url')
+    expect(setOutputMock).toHaveBeenCalledWith('pull-request-number', '123')
   })
 })
