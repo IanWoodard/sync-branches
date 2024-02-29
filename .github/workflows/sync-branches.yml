@@ -1,0 +1,36 @@
+name: Sync Branches
+
+on: 
+  workflow_dispatch: 
+    inputs:
+      source-branch:
+        description: 'Source Branch'
+        required: true
+        default: 'develop'
+      target-branch:
+        description: 'Target Branch'
+        required: true
+        default: 'main'
+      commit-message:
+        description: 'Commit Message'
+        required: true
+        default: 'Test Commit Message'
+
+jobs:
+  sync-branches:
+    name: Sync Branches
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Sync Branches
+        id: sync-branches
+        uses: ./
+        with:
+          source-branch: ${{ github.event.inputs.source-branch }}
+          target-branch: ${{ github.event.inputs.target-branch }}
+          commit-message: ${{ github.event.inputs.commit-message }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

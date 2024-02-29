@@ -35,7 +35,7 @@ describe('utils.ts', () => {
       )
       expect(result).toBe(true)
     })
-    it('returns false if the branches are in sync', async () => {
+    it('returns false if the source branch is not behind the target branch', async () => {
       const octokit = {
         rest: {
           repos: {
