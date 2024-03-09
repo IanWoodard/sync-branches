@@ -29101,7 +29101,7 @@ async function areBranchesOutOfSync(sourceBranch, targetBranch, octokit) {
         base: targetBranch,
         head: sourceBranch,
     });
-    return commits.behind_by > 0;
+    return commits.ahead_by > 0;
 }
 exports.areBranchesOutOfSync = areBranchesOutOfSync;
 async function findExistingPullRequest(sourceBranch, targetBranch, octokit) {
