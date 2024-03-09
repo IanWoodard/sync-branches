@@ -45,6 +45,7 @@ describe('action', () => {
           return ''
       }
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(github.context as any).repo = { owner: 'mockOwner', repo: 'mockRepo' }
 
     jest.mock('@actions/github', () => ({
