@@ -17,13 +17,13 @@ describe('utils.ts', () => {
   })
 
   describe('areBranchesOutOfSync', () => {
-    it('returns true if the source branch is behind the target branch', async () => {
+    it('returns true if the source branch is ahead of the target branch', async () => {
       const octokit = {
         rest: {
           repos: {
             compareCommits: jest
               .fn()
-              .mockResolvedValue({ data: { behind_by: 1 } }),
+              .mockResolvedValue({ data: { ahead_by: 1 } }),
           },
         },
       }
@@ -35,13 +35,13 @@ describe('utils.ts', () => {
       )
       expect(result).toBe(true)
     })
-    it('returns false if the source branch is not behind the target branch', async () => {
+    it('returns false if the source branch is not ahead of the target branch', async () => {
       const octokit = {
         rest: {
           repos: {
             compareCommits: jest
               .fn()
-              .mockResolvedValue({ data: { behind_by: 0 } }),
+              .mockResolvedValue({ data: { ahead_by: 0 } }),
           },
         },
       }
