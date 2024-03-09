@@ -17,7 +17,7 @@ export async function areBranchesOutOfSync(
     base: targetBranch,
     head: sourceBranch,
   })
-  return commits.behind_by > 0
+  return commits.ahead_by > 0
 }
 
 export async function findExistingPullRequest(
