@@ -11,10 +11,6 @@ on:
         description: 'Target Branch'
         required: true
         default: 'main'
-      commit-message:
-        description: 'Commit Message'
-        required: true
-        default: 'Test Commit Message'
 
 jobs:
   sync-branches:
