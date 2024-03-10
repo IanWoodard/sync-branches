@@ -26,7 +26,6 @@ jobs:
         id: sync-branches
         uses: ./
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           source-branch: ${{ github.event.inputs.source-branch }}
           target-branch: ${{ github.event.inputs.target-branch }}
-          commit-message: ${{ github.event.inputs.commit-message }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
