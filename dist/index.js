@@ -29035,6 +29035,10 @@ async function run() {
             throw new Error('Input required and not supplied: source-branch');
         if (!inputs.targetBranch)
             throw new Error('Input required and not supplied: target-branch');
+        if (!inputs.pullRequestTitle)
+            inputs.pullRequestTitle = `Sync ${inputs.sourceBranch} to ${inputs.targetBranch}`;
+        if (!inputs.pullRequestBody)
+            inputs.pullRequestBody = `This is an auto-generated pull request to sync the ${inputs.sourceBranch} branch to the ${inputs.targetBranch} branch.`;
         await (0, syncBranches_1.syncBranches)(inputs);
     }
     catch (error) {
