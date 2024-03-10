@@ -136,8 +136,8 @@ describe('action', () => {
     expect(mockPullsCreate).toHaveBeenCalledWith({
       owner: 'mockOwner',
       repo: 'mockRepo',
-      title: '',
-      body: '',
+      title: 'Sync source to target',
+      body: 'This is an auto-generated pull request to sync the source branch to the target branch.',
       head: 'source',
       base: 'target',
     })

@@ -17,13 +17,11 @@ inputs:
     description: 'Target Branch'
     required: true
   pull-request-title:
-    description: 'Pull Request Title'
+    description: 'Pull Request Title (Defaults to "Sync {source-branch} to {target-branch}")'
     required: false
-    default: 'Syncing Branches: ${{ inputs.source-branch }} -> ${{ inputs.target-branch }}'
   pull-request-body:
-    description: 'Pull Request Body'
+    description: 'Pull Request Body (Defaults to "This is an auto-generated pull request to sync the ${source-branch} branch to the {target-branch} branch.")'
     required: false
-    default: 'This pull request was automatically generated to synchronize changes from ${{ inputs.source-branch }} to ${{ inputs.target-branch }}.'
   labels:
     description: 'Labels'
     required: false
