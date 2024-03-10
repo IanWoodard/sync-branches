@@ -2,27 +2,49 @@ name: 'Sync Branches'
 description: 'GitHub Action to seamlessly synchronize changes across branches'
 author: 'Ian Woodard'
 
-# Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
   icon: 'git-pull-request'
   color: 'blue'
 
-# Define your inputs here.
 inputs:
+  github-token:
+    description: 'GitHub Token'
+    required: true
   source-branch:
     description: 'Source Branch'
     required: true
   target-branch:
     description: 'Target Branch'
     required: true
-  commit-message:
-    description: 'Commit Message'
-    required: true
-  github-token:
-    description: 'GitHub Token'
-    required: true
+  pull-request-title:
+    description: 'Pull Request Title'
+    required: false
+    default: 'Syncing Branches: ${{ inputs.source-branch }} -> ${{ inputs.target-branch }}'
+  pull-request-body:
+    description: 'Pull Request Body'
+    required: false
+    default: 'This pull request was automatically generated to synchronize changes from ${{ inputs.source-branch }} to ${{ inputs.target-branch }}.'
+  labels:
+    description: 'Labels'
+    required: false
+    default: '[]'
+  assignees:
+    description: 'Assignees'
+    required: false
+    default: '[]'
+  reviewers:
+    description: 'Reviewers'
+    required: false
+    default: '[]'
+  team-reviewers:
+    description: 'Team Reviewers'
+    required: false
+    default: '[]'
+  draft:
+    description: 'Draft'
+    required: false
+    default: 'false'  
 
-# Define your outputs here.
 outputs:
   pull-request-url:
     description: 'URL of the pull request'

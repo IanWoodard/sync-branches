@@ -19,6 +19,8 @@ let getInputMock: jest.SpiedFunction<typeof core.getInput>
 let setOutputMock: jest.SpiedFunction<typeof core.setOutput>
 let setFailedMock: jest.SpiedFunction<typeof core.setFailed>
 
+const requiredInputs = ['github-token', 'source-branch', 'target-branch']
+
 jest.mock('@actions/core')
 jest.mock('@actions/github')
 jest.mock('../src/utils')
@@ -37,8 +39,6 @@ describe('action', () => {
           return 'source'
         case 'target-branch':
           return 'target'
-        case 'commit-message':
-          return 'test message'
         case 'github-token':
           return 'test-token'
         default:
@@ -69,16 +69,22 @@ describe('action', () => {
     expect(setFailedMock).toHaveBeenCalledWith(error.message)
   })
 
-  it('should fail if required inputs are not provided', async () => {
-    getInputMock.mockReturnValue('')
+  test.each(requiredInputs)(
+    'should fail if %s is not provided',
+    async input => {
+      getInputMock.mockImplementation((name: string) => {
+        if (name === input) return ''
+        return 'test-value'
+      })
 
-    await main.run()
-    expect(runMock).toHaveReturned()
+      await main.run()
+      expect(runMock).toHaveReturned()
 
-    expect(setFailedMock).toHaveBeenCalledWith(
-      'Input required and not supplied: source-branch, target-branch, commit-message, github-token',
-    )
-  })
+      expect(setFailedMock).toHaveBeenCalledWith(
+        `Input required and not supplied: ${input}`,
+      )
+    },
+  )
 
   it('should do nothing if branches are already in sync', async () => {
     ;(areBranchesOutOfSync as jest.Mock).mockResolvedValue(false)
@@ -130,7 +136,8 @@ describe('action', () => {
     expect(mockPullsCreate).toHaveBeenCalledWith({
       owner: 'mockOwner',
       repo: 'mockRepo',
-      title: 'test message',
+      title: '',
+      body: '',
       head: 'source',
       base: 'target',
     })

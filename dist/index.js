@@ -29007,7 +29007,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
+const syncBranches_1 = __nccwpck_require__(9989);
 const utils_1 = __nccwpck_require__(1314);
 /**
  * The main function for the action.
@@ -29016,41 +29016,26 @@ const utils_1 = __nccwpck_require__(1314);
 async function run() {
     try {
         const inputs = {
+            githubToken: core.getInput('github-token', { required: true }),
             sourceBranch: core.getInput('source-branch', { required: true }),
             targetBranch: core.getInput('target-branch', { required: true }),
-            commitMessage: core.getInput('commit-message', { required: true }),
-            githubToken: core.getInput('github-token', { required: true }),
+            pullRequestTitle: core.getInput('pull-request-title', {
+                required: false,
+            }),
+            pullRequestBody: core.getInput('pull-request-body', { required: false }),
+            labels: (0, utils_1.getInputAsArray)('labels', { required: false }),
+            assignees: (0, utils_1.getInputAsArray)('assignees', { required: false }),
+            reviewers: (0, utils_1.getInputAsArray)('reviewers', { required: false }),
+            teamReviewers: (0, utils_1.getInputAsArray)('team-reviewers', { required: false }),
+            draft: core.getBooleanInput('draft', { required: false }),
         };
-        const missingInputs = Object.entries(inputs).filter(([, value]) => !value);
-        if (missingInputs.length > 0) {
-            // Replace camelCase with kebab-case
-            core.setFailed(`Input required and not supplied: ${missingInputs
-                .map(([key]) => key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase())
-                .join(', ')}`);
-            return;
-        }
-        const octokit = github.getOctokit(inputs.githubToken);
-        const syncNeeded = await (0, utils_1.areBranchesOutOfSync)(inputs.sourceBranch, inputs.targetBranch, octokit);
-        if (!syncNeeded) {
-            core.info('Branches are already in sync.');
-            return;
-        }
-        const existingPR = await (0, utils_1.findExistingPullRequest)(inputs.sourceBranch, inputs.targetBranch, octokit);
-        if (existingPR != null) {
-            core.info('Pull request already exists.');
-            core.setOutput('pull-request-url', existingPR.html_url);
-            core.setOutput('pull-request-number', existingPR.number.toString());
-            return;
-        }
-        const { data: pullRequest } = await octokit.rest.pulls.create({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            title: inputs.commitMessage,
-            head: inputs.sourceBranch,
-            base: inputs.targetBranch,
-        });
-        core.setOutput('pull-request-url', pullRequest.html_url);
-        core.setOutput('pull-request-number', pullRequest.number.toString());
+        if (!inputs.githubToken)
+            throw new Error('Input required and not supplied: github-token');
+        if (!inputs.sourceBranch)
+            throw new Error('Input required and not supplied: source-branch');
+        if (!inputs.targetBranch)
+            throw new Error('Input required and not supplied: target-branch');
+        await (0, syncBranches_1.syncBranches)(inputs);
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -29059,6 +29044,69 @@ async function run() {
     }
 }
 exports.run = run;
+
+
+/***/ }),
+
+/***/ 9989:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.syncBranches = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
+const utils_1 = __nccwpck_require__(1314);
+async function syncBranches(inputs) {
+    const octokit = github.getOctokit(inputs.githubToken);
+    const syncNeeded = await (0, utils_1.areBranchesOutOfSync)(inputs.sourceBranch, inputs.targetBranch, octokit);
+    if (!syncNeeded) {
+        core.info('Branches are already in sync.');
+        return;
+    }
+    const existingPR = await (0, utils_1.findExistingPullRequest)(inputs.sourceBranch, inputs.targetBranch, octokit);
+    if (existingPR != null) {
+        core.info('Pull request already exists.');
+        core.setOutput('pull-request-url', existingPR.html_url);
+        core.setOutput('pull-request-number', existingPR.number.toString());
+        return;
+    }
+    const { data: pullRequest } = await octokit.rest.pulls.create({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        title: inputs.pullRequestTitle,
+        body: inputs.pullRequestBody,
+        head: inputs.sourceBranch,
+        base: inputs.targetBranch,
+    });
+    core.setOutput('pull-request-url', pullRequest.html_url);
+    core.setOutput('pull-request-number', pullRequest.number.toString());
+}
+exports.syncBranches = syncBranches;
 
 
 /***/ }),
@@ -29092,8 +29140,36 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.findExistingPullRequest = exports.areBranchesOutOfSync = void 0;
+exports.findExistingPullRequest = exports.areBranchesOutOfSync = exports.getStringAsArray = exports.getInputAsArray = void 0;
+const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+// Regular expression for matching an array (including empty arrays)
+const ARRAY_REGEX = /^\[.*\]$/;
+/**
+ * Get an input as an array.
+ * @param name the name of the input
+ * @param options the options for getting the input
+ */
+function getInputAsArray(name, options) {
+    const value = core.getInput(name, options);
+    return getStringAsArray(value);
+}
+exports.getInputAsArray = getInputAsArray;
+/**
+ * Get an input as an array of strings.
+ * @param value the array as a string (e.g. "[a, b, c]")
+ * @returns the array of strings
+ */
+function getStringAsArray(value) {
+    if (!ARRAY_REGEX.test(value))
+        throw new Error('Invalid array format');
+    return value
+        .slice(1, -1)
+        .split(',')
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+}
+exports.getStringAsArray = getStringAsArray;
 async function areBranchesOutOfSync(sourceBranch, targetBranch, octokit) {
     const { data: commits } = await octokit.rest.repos.compareCommits({
         owner: github.context.repo.owner,
